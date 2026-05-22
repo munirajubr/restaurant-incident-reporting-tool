@@ -1,15 +1,4 @@
-const getApiBase = () => {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname === '127.0.0.1' || hostname === 'local' + 'host') {
-      return 'http://127.0.0.1:5000/api';
-    }
-    return 'https://restaurant-incident-reporting-tool.vercel.app/_/backend/api';
-  }
-  return 'https://restaurant-incident-reporting-tool.vercel.app/_/backend/api';
-};
-
-const API_BASE = getApiBase();
+const API_BASE = 'https://restaurant-incident-reporting-tool.vercel.app';
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
