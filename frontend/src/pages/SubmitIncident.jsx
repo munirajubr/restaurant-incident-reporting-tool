@@ -38,12 +38,64 @@ const SubmitIncident = () => {
     }
   };
 
-  // Convert uploaded image files to Base64
+  // Compress an image file using a canvas and return a Base64 JPEG string.
+  // Targets ≤ 600 KB base64 per image so combined payload stays under Vercel's
+  // 4.5 MB serverless request body limit.
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+
+        // Keep longest side ≤ 800 px
+        const MAX_SIDE = 800;
+        let { width, height } = img;
+
+        if (width > MAX_SIDE || height > MAX_SIDE) {
+          if (width > height) {
+            height = Math.round((height / width) * MAX_SIDE);
+            width = MAX_SIDE;
+          } else {
+            width = Math.round((width / height) * MAX_SIDE);
+            height = MAX_SIDE;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Start at 0.55 quality; drop by 0.1 each pass until ≤ 600 KB base64
+        const MAX_B64_BYTES = 600 * 1024; // 600 KB
+        let quality = 0.55;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        while (dataUrl.length > MAX_B64_BYTES && quality > 0.15) {
+          quality = Math.round((quality - 0.1) * 100) / 100;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        resolve(dataUrl);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Failed to load image '${file.name}'.`));
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  // Convert uploaded image files to compressed Base64
   const processImageFiles = (files) => {
     if (!files || files.length === 0) return;
 
     const fileList = Array.from(files);
-    
+
     // Validate count
     if (uploadedImages.length + fileList.length > 5) {
       setToast({ message: 'You can upload a maximum of 5 images.', type: 'error' });
@@ -51,24 +103,17 @@ const SubmitIncident = () => {
     }
 
     const loadPromises = fileList.map((file) => {
-      return new Promise((resolve, reject) => {
-        // Validate type
-        if (!file.type.startsWith('image/')) {
-          reject(new Error(`File '${file.name}' is not a valid image (PNG, JPG, WEBP).`));
-          return;
-        }
+      // Validate type
+      if (!file.type.startsWith('image/')) {
+        return Promise.reject(new Error(`File '${file.name}' is not a valid image (PNG, JPG, WEBP).`));
+      }
 
-        // Validate size (limit to 2MB to keep Base64 payloads lightweight)
-        if (file.size > 2 * 1024 * 1024) {
-          reject(new Error(`Image '${file.name}' exceeds 2MB limit.`));
-          return;
-        }
+      // Validate raw size — 2 MB cap matches UI hint and keeps compression fast
+      if (file.size > 2 * 1024 * 1024) {
+        return Promise.reject(new Error(`Image '${file.name}' exceeds the 2 MB per-file limit. Please resize it first.`));
+      }
 
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error(`Failed to read file '${file.name}'.`));
-        reader.readAsDataURL(file);
-      });
+      return compressImage(file);
     });
 
     Promise.all(loadPromises)
@@ -331,7 +376,7 @@ const SubmitIncident = () => {
                     >
                       <Upload size={24} className="image-upload-icon" />
                       <span className="image-upload-text" style={{ fontSize: '0.85rem' }}>Click to select images or drag &amp; drop</span>
-                      <span className="image-upload-hint" style={{ fontSize: '0.7rem' }}>Supports PNG, JPG, WEBP formats (Max 2MB per file)</span>
+                      <span className="image-upload-hint" style={{ fontSize: '0.7rem' }}>Supports PNG, JPG, WEBP formats (Max 10MB — auto-compressed)</span>
                     </div>
                   ) : (
                     <div className="form-intro-alert" style={{ background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.1)', margin: 0, padding: '0.75rem 1rem' }}>
