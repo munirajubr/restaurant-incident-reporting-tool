@@ -38,8 +38,8 @@ A centralized environment file has been created in the root directory: `.env`.
 You can customize the ports or connection keys:
 ```env
 PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/restaurant_incidents
-JWT_SECRET=supersecretrestaurantincidentreportingtoolkey_12345
+MONGO_URI=replace_your_mongodb_url
+JWT_SECRET=replace_yourjwtsecret
 JWT_EXPIRES_IN=7d
 ```
 
