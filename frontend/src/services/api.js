@@ -1,4 +1,4 @@
-const API_BASE = 'https://restaurant-incident-reporting-tool.vercel.app';
+const API_BASE = 'https://restaurant-incident-reporting-tool-backend.vercel.app/api';
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
