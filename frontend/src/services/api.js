@@ -4,9 +4,9 @@ const getApiBase = () => {
     if (hostname === '127.0.0.1' || hostname === 'local' + 'host') {
       return 'http://127.0.0.1:5000/api';
     }
-    return `${window.location.origin}/api`;
+    return `${window.location.origin}/_/backend/api`;
   }
-  return '/api';
+  return '/_/backend/api';
 };
 
 const API_BASE = getApiBase();
