@@ -2,5 +2,9 @@
   "name": "restaurant-incident-reporting-root",
   "version": "1.0.0",
   "description": "Root package for Restaurant Incident Reporting Tool",
-  "private": true
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
 }

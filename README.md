@@ -31,10 +31,12 @@ A full-stack, responsive, and secure incident management console designed for re
 
 ## ⚙️ Setup & Installation Instructions
 
+This project is organized as an npm workspaces monorepo, which allows centralized dependency management during deployment while keeping local development modular and isolated.
+
 To run this project locally, ensure you have [Node.js](https://nodejs.org/) installed.
 
 ### 1. Environment Configurations
-A centralized environment file has been created in the root directory: `.env`. 
+A centralized environment file is located in the root directory: `.env`. 
 You can customize the ports or connection keys:
 ```env
 PORT=5000
@@ -43,32 +45,52 @@ JWT_SECRET=replace_yourjwtsecret
 JWT_EXPIRES_IN=7d
 ```
 
-### 2. Launch the Backend Server
-1. Open a terminal and navigate to the backend folder:
+### 2. Launch the Backend Server Separately
+1. Open a terminal, and navigate into the `backend` directory:
    ```bash
    cd backend
    ```
-2. Launch the development server:
+2. Start the backend development server:
    ```bash
    npm run dev
    ```
-   *The server will start on http://localhost:5000/.*
-   *Note: If MongoDB is running on your machine, it will connect. If not, it will display a warning and activate the local JSON DB fallback dynamically.*
+   *The server will start on `http://127.0.0.1:5000/`.*
+   *Note: If MongoDB is active, the app will connect. Otherwise, it will automatically start in Persistent JSON Fallback mode.*
 
-### 3. Launch the Frontend React App
-1. Open a new, separate terminal and navigate to the frontend folder:
+### 3. Launch the Frontend React App Separately
+1. Open a separate terminal, and navigate into the `frontend` directory:
    ```bash
    cd frontend
    ```
-2. Install the frontend packages:
+2. Install the local packages:
    ```bash
    npm install --legacy-peer-deps
    ```
-3. Start the Vite development server:
+3. Start the Vite dev server:
    ```bash
    npm run dev
    ```
-   *The client console will start. Click the local link displayed (usually http://localhost:5173/) to launch the app!*
+   *The Vite client console will start. Click the local link displayed (usually `http://127.0.0.1:5173/`) to launch the app!*
+
+---
+
+## ☁️ Vercel Deployment Guide (Single-Domain Services)
+
+This monorepo is configured for unified, single-domain Vercel deployment using **Vercel Services** (`experimentalServices`), routing the Vite React app and the Express API together:
+
+- **Frontend**: Mounted at `/` (built using the Vite framework)
+- **Backend API**: Mounted at `/_/backend` (served as serverless Node.js endpoints, responding at `/_/backend/api/...`)
+
+### Configuration Details
+1. **Workspaces Monorepo**: The root `package.json` specifies `"workspaces": ["frontend", "backend"]` alongside a root `package-lock.json`. This ensures that Vercel automatically detects the npm package manager, resolves dependencies correctly, and builds each service successfully.
+2. **Vercel Manifest (`vercel.json`)**: Configures the services mapping (`entrypoint` and `routePrefix`) and pins the frontend framework as `vite`.
+3. **Database Write Fallback**: The backend includes safety logic in `dbFallback.js` that detects the Vercel environment (`process.env.VERCEL`) and redirects local JSON mock database writes to the writable `/tmp` directory, preventing `Read-only file system (EROFS)` serverless crashes.
+
+### Deployment Steps
+To deploy the application to Vercel:
+1. Link your repository in the Vercel dashboard.
+2. **Crucial Setting**: Go to your Vercel Project Settings -> **General** -> scroll down to **Framework Preset** and select **"Services"** (instead of Vite or Other). This instructs Vercel to recognize the `experimentalServices` manifest in `vercel.json`.
+3. Trigger the deployment. Vercel will install dependencies, build both services, and route the backend to `/_/backend` and the frontend to `/` under a single domain.
 
 ---
 
