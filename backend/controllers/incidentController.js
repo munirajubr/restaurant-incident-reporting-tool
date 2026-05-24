@@ -202,11 +202,13 @@ exports.updateIncidentStatus = async (req, res) => {
       updates.managerNotes = managerNotes;
       updates.managerName = req.user.name;
       updates.managerStore = req.user.storeLocation;
+      updates.managerRole = req.user.role === 'manager' ? 'Store Manager' : req.user.role;
     }
     if (resolutionActions !== undefined) {
       updates.resolutionActions = resolutionActions;
       updates.managerName = req.user.name;
       updates.managerStore = req.user.storeLocation;
+      updates.managerRole = req.user.role === 'manager' ? 'Store Manager' : req.user.role;
     }
 
     // Track resolution details

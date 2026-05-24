@@ -60,6 +60,10 @@ const IncidentSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  managerRole: {
+    type: String,
+    default: 'Store Manager'
+  },
   resolutionActions: {
     type: [String],
     default: []

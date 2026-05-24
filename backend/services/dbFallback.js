@@ -201,6 +201,7 @@ const incidentFallback = {
       managerNotes: incidentData.managerNotes || '',
       managerName: incidentData.managerName || '',
       managerStore: incidentData.managerStore || '',
+      managerRole: incidentData.managerRole || 'Store Manager',
       resolutionActions: incidentData.resolutionActions || [],
       image: incidentData.image || '',
       aiSolution: incidentData.aiSolution || '',

@@ -431,7 +431,9 @@ const IncidentInspectDrawer = ({
                         <blockquote className="staff-suggestion-blockquote">
                           <p>"{incident.managerNotes}"</p>
                           <cite className="staff-suggestion-cite">
-                            — {incident.managerName || 'Store Manager'}{incident.managerStore ? ` (${incident.managerStore})` : ''}
+                            — {incident.managerName || 'Store Manager'}
+                            {incident.managerName && incident.managerRole ? `, ${incident.managerRole}` : ''}
+                            {incident.managerStore ? `, ${incident.managerStore}` : ''}
                           </cite>
                         </blockquote>
                       </div>
@@ -472,7 +474,9 @@ const IncidentInspectDrawer = ({
                     <blockquote className="staff-suggestion-blockquote">
                       <p>"{incident.managerNotes}"</p>
                       <cite className="staff-suggestion-cite">
-                        — Operational Advice by {incident.managerName || 'Store Manager'}{incident.managerStore ? ` (${incident.managerStore})` : ''}
+                        — {incident.managerName || 'Store Manager'}
+                        {incident.managerName && incident.managerRole ? `, ${incident.managerRole}` : ''}
+                        {incident.managerStore ? `, ${incident.managerStore}` : ''}
                       </cite>
                     </blockquote>
                   </div>
