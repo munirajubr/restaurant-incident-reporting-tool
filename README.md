@@ -55,7 +55,11 @@ GEMINI_API_KEY=your_gemini_api_key_here
    ```bash
    cd backend
    ```
-2. Start the backend development server:
+2. Install the local packages:
+   ```bash
+   npm install
+   ```
+3. Start the backend development server:
    ```bash
    npm run dev
    ```
@@ -69,7 +73,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
    ```
 2. Install the local packages:
    ```bash
-   npm install --legacy-peer-deps
+   npm install
    ```
 3. Start the Vite dev server:
    ```bash
@@ -94,12 +98,15 @@ This workspaces monorepo is deployed on Vercel as two separate projects — one 
 1. In the Vercel dashboard, import your repository.
 2. Set the **Root Directory** to `backend` (or wherever your Express app lives).
 3. Vercel will detect it as a Node.js project and deploy it as serverless endpoints.
-4. Note the deployed URL (e.g. `https://your-backend.vercel.app`).
+4. Add the following **Environment Variable** in Project Settings → Environment Variables:
+5. Note the deployed URL (e.g. `https://your-backend.vercel.app`).
 
 #### 2. Deploy the Frontend
 1. Import the same repository again as a **new Vercel project**.
 2. Set the **Root Directory** to `frontend` (or wherever your Vite app lives).
-3. Add the following **Environment Variable** in Project Settings → Environment Variables:
+3. Vercel will detect it as a Node.js project and deploy it as serverless endpoints.
+4. Add the following **Environment Variable** in Project Settings → Environment Variables:
+5. Note the deployed URL (e.g. `https://your-frontend.vercel.app`).
 
 ---
 
