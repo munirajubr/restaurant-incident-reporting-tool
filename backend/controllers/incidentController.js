@@ -93,6 +93,18 @@ exports.getIncidents = async (req, res) => {
         .sort({ dateTime: -1 }); // Latest incidents first
     }
 
+    // Pin Active Critical incidents (Open or In Progress) to the top
+    incidents.sort((a, b) => {
+      const aActiveCritical = (a.severity === 'Critical' && a.status !== 'Resolved' && a.status !== 'Closed') ? 1 : 0;
+      const bActiveCritical = (b.severity === 'Critical' && b.status !== 'Resolved' && b.status !== 'Closed') ? 1 : 0;
+
+      if (aActiveCritical !== bActiveCritical) {
+        return bActiveCritical - aActiveCritical; // Active critical first
+      }
+
+      return new Date(b.dateTime) - new Date(a.dateTime); // Secondary sort by date descending
+    });
+
     return res.status(200).json({
       success: true,
       count: incidents.length,

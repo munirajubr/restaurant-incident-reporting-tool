@@ -146,8 +146,17 @@ const incidentFallback = {
       );
     }
 
-    // Sort by dateTime descending (latest first)
-    incidents.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+    // Sort by Active Critical status first, then by dateTime descending (latest first)
+    incidents.sort((a, b) => {
+      const aActiveCritical = (a.severity === 'Critical' && a.status !== 'Resolved' && a.status !== 'Closed') ? 1 : 0;
+      const bActiveCritical = (b.severity === 'Critical' && b.status !== 'Resolved' && b.status !== 'Closed') ? 1 : 0;
+
+      if (aActiveCritical !== bActiveCritical) {
+        return bActiveCritical - aActiveCritical; // Active critical first
+      }
+
+      return new Date(b.dateTime) - new Date(a.dateTime); // Secondary sort by date descending
+    });
 
     // Populate reporter info
     return incidents.map(inc => {
