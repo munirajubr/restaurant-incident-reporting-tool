@@ -1,4 +1,4 @@
-const API_BASE = 'https://restaurant-incident-reporting-tool-backend.vercel.app/api';
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
@@ -22,7 +22,8 @@ const handleResponse = async (response) => {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed. Please try again.');
+    const message = data && (data.error || data.message) ? (data.error || data.message) : JSON.stringify(data) || 'Request failed. Please try again.';
+    throw new Error(message);
   }
   return data;
 };

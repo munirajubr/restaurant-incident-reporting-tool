@@ -10,22 +10,29 @@ A full-stack, responsive, and secure incident management console designed for re
 - **Backend**: Node.js, Express.js, JSON Web Tokens (JWT) for secure authentication, Bcrypt.js for credential hashing, CORS
 - **Database**: MongoDB (via Mongoose ODM)
 - **Fallback Database**: Persistent Local JSON Storage (automatically boots if MongoDB is offline)
-- **Styling**: Vanilla CSS with Slate/Zinc colors, glassmorphic auth elements, and dynamic micro-animations.
+- **Styling**: Vanilla CSS designed with a premium warm gourmet orange-red (`#f25c22`) and charcoal-slate theme, glassmorphic auth elements, custom SVG chevron expansions, rotating spinner loaders, and responsive UI layout structures.
 
 ---
 
 ## 🛠️ Key Features
 
-1. **Secure Dual-Role Authentication**:
-   - **Staff**: Can submit incident reports. Staff dashboards are locked to show only reports from their assigned store location.
-   - **Manager**: Admin dashboard displays active counts, critical warnings, and cumulative statistics across all restaurant branches. Managers can inspect any report, modify statuses, write resolution logs, and delete logs.
-2. **Dynamic Operations Center**:
-   - Live KPI Metrics: Total, Active (Open + In Progress), Critical alerts, and Cumulative Resolution Rate.
-   - Live filtering by Category, Severity, and Status.
-   - Managers have an additional Location dropdown filter to audit specific store branches.
-   - Live search matching incident titles and descriptions.
-3. **Resilient Offline Fallback**:
-   - Features a database handshake handler. If MongoDB is not active or installed on the system, the backend transparently launches in **Persistent JSON Fallback Mode**, saving all data directly inside `backend/data/*.json`. Endpoints and full CRUD tasks continue working seamlessly!
+1. **🤖 Gemini AI Incident Resolution Engine (Concise & Self-Healing)**:
+   - **Concise operational checks**: Dynamically calls Google Gemini AI using a self-healing candidate pipeline (`gemini-2.5-flash`, `gemini-2.0-flash`, or `gemini-1.5-flash`) to generate extremely concise operational resolution action steps (under 120 words with short one-sentence bullet points).
+   - **Interactive Accordion Details**: Renders the entire AI resolution guide inside a custom collapsible card summary (`<details>`) utilizing a custom arrow SVG chevron (`M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z`) to indicate expansion. The text is parsed to auto-bold key subheadings (such as **Incident Resolution Plan** and **1. Immediate Action Plan:**) and globally strips all raw asterisks (`*`) and hash (`#`) symbols.
+   - **Header Aligned Actions & Spinning Loader**: Features a borderless, backgroundless text button for "Generate Solution" and "Regenerate" neatly aligned inside the header summary. It utilizes event propagation isolation (`e.stopPropagation()`) so clicking it does not toggle accordion states. During loading, a dedicated rotating circular spinner (`.spinner-loader-small`) replaces linear bars for clean, smooth progress tracking.
+   - **Status and Layout Constraints**: The entire AI resolution card is automatically hidden for solved/resolved incidents to keep screens clean. High-fidelity layouts include `flex-shrink: 0` overrides to prevent flex containers from squashing the guide when large base64 photo evidence attachments are loaded.
+2. **🚨 Manager Alert Banners & Bell Notifications**:
+   - Exclusive to Managers, a dynamic top-level **Console Warning Banner** displays active critical incidents requiring immediate operations attention.
+   - A pulsing, glowing **Alerts Notification Bell** in the navbar updates in the background (every 15 seconds) showing active critical warnings count. Clicking the bell displays a dropdown panel with deep-links that inspect the warning instantly.
+3. **📌 Active Pinned Incident Sorting**:
+   - Automatically pins all unresolved Critical incidents (`status !== 'Resolved'` and `severity === 'Critical'`) to the absolute top of the table logs.
+   - Features a custom crimson left-border glow and a glowing **📌 PINNED** badge to ensure critical alerts command immediate focus.
+4. **🔐 Restricted Manager-Only Registration**:
+   - Public "Create Account" paths are fully removed from the landing page.
+   - Manager Dashboard contains a custom "Add User" slider drawer allowing managers to securely register new store staff or managers on the fly without breaking or resetting their own active login session.
+5. **Resilient Offline Fallback & Offline Warning Handlers**:
+   - Handshake handler automatically launches the system in **Persistent JSON Fallback Mode** (saving all logs inside `backend/data/*.json`) if MongoDB is offline.
+   - Elegant toast alerts automatically warn the user of local network dropouts or "Failed to fetch" conditions.
 
 ---
 
@@ -75,23 +82,32 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 ---
 
-## ☁️ Vercel Deployment Guide (Single-Domain Services)
+## ☁️ Vercel Deployment Guide
 
-This monorepo is configured for unified, single-domain Vercel deployment using **Vercel Services** (`experimentalServices`), routing the Vite React app and the Express API together:
+This workspaces monorepo is deployed on Vercel as two separate projects — one for the frontend and one for the backend — each with its own domain.
 
-- **Frontend**: Mounted at `/` (built using the Vite framework)
-- **Backend API**: Mounted at `/_/backend` (served as serverless Node.js endpoints, responding at `/_/backend/api/...`)
+- **Frontend**: Deployed as a standalone Vite project
+- **Backend**: Deployed as a standalone Node.js/Express serverless project
 
-### Configuration Details
-1. **Workspaces Monorepo**: The root `package.json` specifies `"workspaces": ["frontend", "backend"]` alongside a root `package-lock.json`. This ensures that Vercel automatically detects the npm package manager, resolves dependencies correctly, and builds each service successfully.
-2. **Vercel Manifest (`vercel.json`)**: Configures the services mapping (`entrypoint` and `routePrefix`) and pins the frontend framework as `vite`.
-3. **Database Write Fallback**: The backend includes safety logic in `dbFallback.js` that detects the Vercel environment (`process.env.VERCEL`) and redirects local JSON mock database writes to the writable `/tmp` directory, preventing `Read-only file system (EROFS)` serverless crashes.
+---
 
 ### Deployment Steps
-To deploy the application to Vercel:
-1. Link your repository in the Vercel dashboard.
-2. **Crucial Setting**: Go to your Vercel Project Settings -> **General** -> scroll down to **Framework Preset** and select **"Services"** (instead of Vite or Other). This instructs Vercel to recognize the `experimentalServices` manifest in `vercel.json`.
-3. Trigger the deployment. Vercel will install dependencies, build both services, and route the backend to `/_/backend` and the frontend to `/` under a single domain.
+
+#### 1. Deploy the Backend
+1. In the Vercel dashboard, import your repository.
+2. Set the **Root Directory** to `backend` (or wherever your Express app lives).
+3. Vercel will detect it as a Node.js project and deploy it as serverless endpoints.
+4. Note the deployed URL (e.g. `https://your-backend.vercel.app`).
+
+#### 2. Deploy the Frontend
+1. Import the same repository again as a **new Vercel project**.
+2. Set the **Root Directory** to `frontend` (or wherever your Vite app lives).
+3. Add the following **Environment Variable** in Project Settings → Environment Variables:
+
+---
+
+### 💾 Database Write Fallback on Vercel
+Both options include safety logic in `dbFallback.js` that detects the serverless Vercel environment (`process.env.VERCEL`) and redirects local JSON mock database writes to the writable `/tmp` directory, preventing `Read-only file system (EROFS)` crashes if MongoDB is offline.
 
 ---
 
