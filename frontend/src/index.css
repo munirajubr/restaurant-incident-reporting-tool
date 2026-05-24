@@ -811,15 +811,8 @@ select.input-field option {
   transition: var(--transition-smooth);
 }
 
-.auth-divider-circle:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  background-color: var(--primary-color);
-}
-
 .auth-divider-arrow {
   color: #ffffff;
-  font-size: 1.3rem;
-  font-weight: 800;
 }
 
 @media (max-width: 1024px) {

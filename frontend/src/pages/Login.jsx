@@ -125,9 +125,6 @@ const Login = () => {
                   <input type="checkbox" className="custom-checkbox" />
                   <span>Remember me</span>
                 </label>
-                <Link to="/register" className="auth-forgot-link">
-                  Create an account?
-                </Link>
               </div>
 
               <div className="auth-buttons-row">
@@ -136,13 +133,10 @@ const Login = () => {
                   variant="primary"
                   loading={loading}
                   className="btn-auth-action"
+                  style={{ width: '100%' }}
                 >
                   Login
                 </Button>
-                
-                <Link to="/register" className="btn btn-secondary btn-auth-secondary">
-                  Create account
-                </Link>
               </div>
             </form>
           </div>
@@ -150,11 +144,6 @@ const Login = () => {
           <div className="auth-form-footer">
             <p>© 2026 IncidentHub Operations. All rights reserved.</p>
           </div>
-        </div>
-
-        {/* Center Decorative Orange Circle Divider (matching the reference image) */}
-        <div className="auth-divider-circle">
-          <span className="auth-divider-arrow">→</span>
         </div>
 
         {/* Right Panel: Stunning Hero culinary graphic */}

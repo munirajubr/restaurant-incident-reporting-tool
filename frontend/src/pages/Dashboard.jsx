@@ -14,7 +14,8 @@ import {
   User,
   Store,
   RefreshCw,
-  Plus
+  Plus,
+  UserPlus
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
@@ -54,6 +55,18 @@ const Dashboard = () => {
   const [toast, setToast] = useState({ message: '', type: 'info' });
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Manager Add User Form States
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [addUserForm, setAddUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'staff',
+    storeLocation: '',
+  });
+  const [addUserLoading, setAddUserLoading] = useState(false);
+  const [addUserError, setAddUserError] = useState('');
 
   // Inspector form states (for managers)
   const [inspectStatus, setInspectStatus] = useState('');
@@ -143,6 +156,64 @@ const Dashboard = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.has('inspect')) {
       navigate('/', { replace: true });
+    }
+  };
+
+  const handleAddUserChange = (e) => {
+    const { name, value } = e.target;
+    setAddUserForm((prev) => ({ ...prev, [name]: value }));
+    setAddUserError('');
+  };
+
+  const handleAddUserSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!addUserForm.name.trim()) {
+      setAddUserError('Full name is required.');
+      return;
+    }
+    if (!addUserForm.email.trim()) {
+      setAddUserError('Email is required.');
+      return;
+    } else if (!/\S+@\S+\.\S+/.test(addUserForm.email)) {
+      setAddUserError('Please provide a valid email.');
+      return;
+    }
+    if (!addUserForm.password) {
+      setAddUserError('Password is required.');
+      return;
+    } else if (addUserForm.password.length < 6) {
+      setAddUserError('Password must be at least 6 characters.');
+      return;
+    }
+    if (!addUserForm.storeLocation) {
+      setAddUserError('Please select a store location.');
+      return;
+    }
+
+    setAddUserLoading(true);
+    setAddUserError('');
+    try {
+      const response = await api.register(addUserForm);
+      if (response.success) {
+        setToast({
+          message: `User Account for '${addUserForm.name}' (${addUserForm.role}) added successfully!`,
+          type: 'success',
+        });
+        
+        setAddUserForm({
+          name: '',
+          email: '',
+          password: '',
+          role: 'staff',
+          storeLocation: '',
+        });
+        setShowAddUserModal(false);
+      }
+    } catch (error) {
+      setAddUserError(error.message || 'Failed to register new user.');
+    } finally {
+      setAddUserLoading(false);
     }
   };
 
@@ -330,6 +401,16 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="dashboard-actions-header">
+          {user?.role === 'manager' && (
+            <button
+              onClick={() => setShowAddUserModal(true)}
+              className="btn btn-secondary btn-add-user"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', height: '2.6rem' }}
+            >
+              <UserPlus size={16} />
+              <span>Add Staff</span>
+            </button>
+          )}
           <button
             onClick={() => {
               fetchIncidents();
@@ -756,6 +837,142 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Manager Register New User Modal (Drawer) */}
+      {showAddUserModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddUserModal(false)}>
+          <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-drawer-header">
+              <div className="modal-drawer-title-block">
+                <span className="badge-pill badge-gray" style={{ color: 'var(--primary-color)', backgroundColor: 'var(--primary-light)', fontWeight: 700 }}>
+                  MANAGER COMMAND
+                </span>
+              </div>
+              <button
+                onClick={() => setShowAddUserModal(false)}
+                className="btn-modal-close"
+                aria-label="Close panel"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUserSubmit} className="modal-drawer-body" style={{ gap: '20px' }}>
+              <div>
+                <h2 className="modal-incident-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.35rem' }}>
+                  <UserPlus size={22} style={{ color: 'var(--primary-color)' }} />
+                  <span>Register Operations User</span>
+                </h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  Add a secure credential profile to manage or report incident logs.
+                </p>
+              </div>
+
+              <div className="modal-section-divider"></div>
+
+              {addUserError && (
+                <div className="auth-submit-error-banner animate-fade-in" style={{ margin: 0 }}>
+                  <AlertCircle size={16} className="auth-error-banner-icon" />
+                  <span>{addUserError}</span>
+                </div>
+              )}
+
+              <Input
+                label="Full Name"
+                id="add-name"
+                name="name"
+                type="text"
+                placeholder="e.g. John Doe"
+                value={addUserForm.name}
+                onChange={handleAddUserChange}
+                required
+                disabled={addUserLoading}
+                aria-label="Full Name"
+              />
+
+              <Input
+                label="Email Address"
+                id="add-email"
+                name="email"
+                type="email"
+                placeholder="e.g. johndoe@restaurant.com"
+                value={addUserForm.email}
+                onChange={handleAddUserChange}
+                required
+                disabled={addUserLoading}
+                aria-label="Email Address"
+              />
+
+              <Input
+                label="Initial Password"
+                id="add-password"
+                name="password"
+                type="password"
+                placeholder="Min. 6 characters"
+                value={addUserForm.password}
+                onChange={handleAddUserChange}
+                required
+                disabled={addUserLoading}
+                aria-label="Initial Password"
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <Input
+                  label="System Role"
+                  id="add-role"
+                  name="role"
+                  type="select"
+                  value={addUserForm.role}
+                  onChange={handleAddUserChange}
+                  options={[
+                    { value: 'staff', label: 'Store Staff' },
+                    { value: 'manager', label: 'Store Manager' }
+                  ]}
+                  required
+                  disabled={addUserLoading}
+                  aria-label="System Role"
+                />
+
+                <Input
+                  label="Location"
+                  id="add-location"
+                  name="storeLocation"
+                  type="select"
+                  placeholder="-- Location --"
+                  value={addUserForm.storeLocation}
+                  onChange={handleAddUserChange}
+                  options={storeOptions}
+                  required
+                  disabled={addUserLoading}
+                  aria-label="Store Location"
+                />
+              </div>
+
+              <div className="modal-section-divider" style={{ marginTop: 'auto' }}></div>
+
+              <div style={{ display: 'flex', gap: '12px', width: '100%', paddingBottom: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1, height: '2.8rem', justifyContent: 'center' }}
+                  disabled={addUserLoading}
+                >
+                  Cancel
+                </button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  loading={addUserLoading}
+                  style={{ flex: 1, height: '2.8rem' }}
+                >
+                  Create User
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {toast.message && (
         <Toast
           message={toast.message}
@@ -766,6 +983,7 @@ const Dashboard = () => {
     </div>
   );
 };
+
 
 // SVG Subcomponents to keep code clean and dependency-free
 const ShieldAlertIcon = () => (

@@ -32,7 +32,6 @@ function App() {
           <Routes>
             {/* Public Authentications */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
 
             {/* Authenticated Dashboard Operations */}
             <Route

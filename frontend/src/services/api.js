@@ -41,7 +41,7 @@ export const api = {
   register: async (userData) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(userData),
     });
     return handleResponse(res);
