@@ -116,4 +116,12 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  generateAiSolution: async (id) => {
+    const res = await fetch(`${API_BASE}/incidents/${id}/ai-solution`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
 };

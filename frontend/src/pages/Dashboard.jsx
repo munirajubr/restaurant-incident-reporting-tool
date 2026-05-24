@@ -15,7 +15,8 @@ import {
   Store,
   RefreshCw,
   Plus,
-  UserPlus
+  UserPlus,
+  Sparkles
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
@@ -24,6 +25,60 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Toast from '../components/Toast';
+
+// Helper to parse AI solution text into collapsible sections with clean text
+const parseAiSolution = (text) => {
+  if (!text) return [];
+  
+  // Clean all bold and list markdown characters: *, **, and strip any leading/trailing space
+  const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
+  
+  const lines = cleanText.split('\n');
+  const sections = [];
+  let currentSection = null;
+  
+  // Match headers (e.g., "1. Immediate Action Plan", "2. Root Cause...", "Immediate Action Plan", etc.)
+  const isHeader = (line) => {
+    const l = line.toLowerCase().trim();
+    return (
+      /^\d+\.\s+/.test(l) || // Starts with "1. ", "2. ", etc.
+      l.includes('immediate action plan') ||
+      l.includes('root cause analysis') ||
+      l.includes('preventative actions') ||
+      l.includes('recommended operations tools') ||
+      l.includes('recommended tools')
+    );
+  };
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    if (isHeader(trimmed)) {
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      currentSection = {
+        title: trimmed,
+        content: []
+      };
+    } else {
+      if (!currentSection) {
+        currentSection = {
+          title: 'AI Incident Analysis',
+          content: []
+        };
+      }
+      currentSection.content.push(trimmed);
+    }
+  }
+  
+  if (currentSection) {
+    sections.push(currentSection);
+  }
+  
+  return sections;
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -67,6 +122,9 @@ const Dashboard = () => {
   });
   const [addUserLoading, setAddUserLoading] = useState(false);
   const [addUserError, setAddUserError] = useState('');
+
+  // AI Solution Generation States
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Inspector form states (for managers)
   const [inspectStatus, setInspectStatus] = useState('');
@@ -214,6 +272,31 @@ const Dashboard = () => {
       setAddUserError(error.message || 'Failed to register new user.');
     } finally {
       setAddUserLoading(false);
+    }
+  };
+
+  const handleGenerateAiSolution = async () => {
+    if (!selectedIncident) return;
+    
+    setAiLoading(true);
+    try {
+      const response = await api.generateAiSolution(selectedIncident._id);
+      if (response.success && response.data) {
+        setToast({
+          message: 'Gemini AI successfully generated and saved incident solution guide!',
+          type: 'success',
+        });
+        
+        setSelectedIncident(response.data);
+        fetchIncidents();
+      }
+    } catch (error) {
+      setToast({
+        message: error.message || 'Gemini AI failed to compile incident solution plan.',
+        type: 'error',
+      });
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -744,6 +827,99 @@ const Dashboard = () => {
                     <span className="reporter-email">{selectedIncident.reporter.email}</span>
                   </div>
                 </div>
+              )}
+
+              {/* <div className="modal-section-divider"></div> */}
+
+              {/* AI-Generated Resolution Guide */}
+              {selectedIncident.status !== 'Resolved' && (
+                <details 
+                  className="modal-detail-section modal-ai-solution-box" 
+                  open={!!selectedIncident.aiSolution}
+                >
+                  <summary className="ai-solution-summary">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span className="ai-summary-arrow-wrapper">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="ai-summary-arrow-svg" height="20px" viewBox="0 -960 960 960" width="20px">
+                            <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z" fill="currentColor"/>
+                          </svg>
+                        </span>
+                        <Sparkles size={16} className="ai-sparkles-icon" />
+                        <h4 className="modal-section-title" style={{ margin: 0, color: 'var(--text-main)', textTransform: 'none', letterSpacing: 'normal' }}>
+                          AI Resolution Guide
+                        </h4>
+                      </div>
+                      {selectedIncident.aiSolution && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleGenerateAiSolution();
+                          }}
+                          className="btn-ai-regenerate-heading"
+                          disabled={aiLoading}
+                        >
+                          <Sparkles size={12} />
+                          <span>Regenerate</span>
+                        </button>
+                      )}
+                    </div>
+                  </summary>
+                  
+                  <div className="ai-solution-details-content">
+                    {aiLoading ? (
+                      <div className="ai-solution-loading animate-pulse">
+                        <span className="spinner-loader-small"></span>
+                        <p style={{ margin: '0.5rem 0 0 0', fontWeight: '500', color: 'var(--primary-color)' }}>
+                          Gemini AI is compiling operations resolutions...
+                        </p>
+                      </div>
+                    ) : selectedIncident.aiSolution ? (
+                      <div className="ai-solution-content-text animate-fade-in">
+                        {selectedIncident.aiSolution.split('\n').map((line, idx) => {
+                          const trimmedLine = line.trim();
+                          const isHeader = 
+                            line.includes('###') || 
+                            trimmedLine.startsWith('#') || 
+                            line.toLowerCase().includes('incident resolution plan') ||
+                            /^\d+\.\s+/.test(trimmedLine) || 
+                            line.toLowerCase().includes('immediate action') ||
+                            line.toLowerCase().includes('prevention') ||
+                            line.toLowerCase().includes('root cause');
+                            
+                          const cleaned = line.replace(/[#*]/g, '').trim();
+                          if (!cleaned && !line.trim()) return <div key={idx} style={{ height: '0.5rem' }}></div>;
+                          if (isHeader) {
+                            return (
+                              <p 
+                                key={idx} 
+                                className="ai-solution-line" 
+                                style={{ fontWeight: 700, color: 'var(--text-main)', marginTop: '0.75rem', fontSize: '0.9rem' }}
+                              >
+                                {cleaned}
+                              </p>
+                            );
+                          }
+                          return <p key={idx} className="ai-solution-line">{cleaned}</p>;
+                        })}
+                      </div>
+                    ) : (
+                      <div className="ai-solution-empty-state">
+                        <p>No operational solution generated yet. Click below to analyze with Gemini AI.</p>
+                        <button
+                          type="button"
+                          onClick={handleGenerateAiSolution}
+                          className="btn btn-primary btn-ai-generate"
+                        >
+                          <Sparkles size={14} />
+                          <span>Generate Solution</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </details>
               )}
 
               <div className="modal-section-divider"></div>

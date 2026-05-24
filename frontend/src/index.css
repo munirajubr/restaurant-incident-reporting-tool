@@ -1559,12 +1559,14 @@ select.input-field option {
   height: 1px;
   background-color: var(--border-color);
   width: 100%;
+  flex-shrink: 0;
 }
 
 .modal-detail-section {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .modal-section-title {
@@ -1726,9 +1728,9 @@ select.input-field option {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 1.4rem;
   font-family: var(--font-body);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.9rem;
   border-radius: var(--radius-md);
   border: 1px solid #cbd5e1;
@@ -1750,8 +1752,9 @@ select.input-field option {
 }
 
 .btn-sticky-action.btn-status-solved:hover:not(:disabled) {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #ffffff !important;
 }
 
 .btn-sticky-action.btn-status-ongoing.active {
@@ -2927,6 +2930,246 @@ select.input-field option {
 .auth-error-banner-icon {
   color: var(--danger-color);
   flex-shrink: 0;
+}
+
+/* ==========================================================================
+   AI GUIDE VISUAL DESIGN SYSTEM
+   ========================================================================== */
+.modal-ai-solution-box {
+  display: block !important;
+  background: linear-gradient(135deg, rgba(242, 92, 34, 0.02) 0%, rgba(234, 88, 12, 0.02) 100%);
+  border: 1px dashed rgba(242, 92, 34, 0.3);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 0.75rem;
+}
+
+.modal-ai-solution-box:hover {
+  border-color: rgba(242, 92, 34, 0.5);
+  background: linear-gradient(135deg, rgba(242, 92, 34, 0.04) 0%, rgba(234, 88, 12, 0.04) 100%);
+}
+
+.modal-ai-solution-box[open] {
+  border-style: solid;
+  border-color: var(--primary-color);
+  background: #ffffff;
+  box-shadow: 0 4px 20px -2px rgba(242, 92, 34, 0.08);
+}
+
+.ai-solution-summary {
+  padding: 1.1rem 1.25rem;
+  font-family: var(--font-heading);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  list-style: none; /* Hide default chrome arrows */
+  transition: background-color 0.2s ease;
+}
+
+.ai-solution-summary:hover {
+  background-color: rgba(242, 92, 34, 0.03);
+}
+
+/* Custom list marker arrow hiding for cross-browser support */
+.ai-solution-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Custom dynamic indicators with rotate transitions */
+.ai-summary-arrow-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-ai-solution-box[open] .ai-summary-arrow-wrapper {
+  transform: rotate(90deg);
+}
+
+.ai-summary-arrow-svg {
+  display: block;
+}
+
+.ai-sparkles-icon {
+  color: var(--primary-color);
+  filter: drop-shadow(0 0 4px rgba(242, 92, 34, 0.25));
+}
+
+.ai-solution-details-content {
+  padding: 0 1.25rem 1.25rem 1.25rem;
+  border-top: 1px dashed rgba(242, 92, 34, 0.15);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* AI Solution Loading and Pulsing states */
+.ai-solution-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+}
+
+.ai-solution-loading p {
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.spinner-loader-small {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(242, 92, 34, 0.15);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* AI Guide empty state */
+.ai-solution-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem 1rem 1rem 1rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.ai-solution-empty-state p {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  max-width: 280px;
+  line-height: 1.45;
+}
+
+.btn-ai-generate {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--primary-color) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-ai-generate:hover {
+  background-color: var(--primary-light) !important;
+  color: var(--primary-hover) !important;
+  transform: translateY(-0.5px);
+}
+
+/* AI Guide Generated Text Styling */
+.ai-solution-content-text {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-main);
+  padding: 1.25rem 0.5rem 0.5rem 0.5rem;
+}
+
+.ai-solution-line {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.ai-solution-line:last-of-type {
+  margin: 0;
+}
+
+.btn-ai-regenerate-heading {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--primary-color) !important;
+  font-family: var(--font-body);
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: var(--transition-smooth);
+}
+
+/* .btn-ai-regenerate-heading:hover:not(:disabled) {
+  background-color: var(--primary-light) !important;
+  color: var(--primary-hover) !important;
+  transform: translateY(-0.5px);
+} */
+
+.btn-ai-regenerate-heading:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.animate-pulse {
+  animation: pulse-ai 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ai {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .6; }
+}
+
+/* Spinner Rotation Keyframe */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Linear Progress Bar Styles */
+.ai-progress-bar-container {
+  width: 100%;
+  max-width: 240px;
+  height: 4px;
+  background-color: rgba(242, 92, 34, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.75rem;
+  position: relative;
+}
+
+.ai-progress-bar-fill {
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  border-radius: 2px;
+  position: absolute;
+  left: -50%;
+  animation: loading-progress 1.5s infinite ease-in-out;
+}
+
+@keyframes loading-progress {
+  0% {
+    left: -50%;
+    width: 30%;
+  }
+  50% {
+    width: 60%;
+  }
+  100% {
+    left: 100%;
+    width: 30%;
+  }
 }
 
 

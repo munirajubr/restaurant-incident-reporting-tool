@@ -201,6 +201,7 @@ const incidentFallback = {
       managerNotes: incidentData.managerNotes || '',
       resolutionActions: incidentData.resolutionActions || [],
       image: incidentData.image || '',
+      aiSolution: incidentData.aiSolution || '',
       resolvedAt: null,
       resolvedBy: null,
       createdAt: new Date().toISOString()

@@ -361,3 +361,153 @@ exports.getIncidentStats = async (req, res) => {
     });
   }
 };
+
+// @desc    Generate resolution solution using Google Gemini AI
+// @route   POST /api/incidents/:id/ai-solution
+// @access  Private (Authenticated users)
+exports.generateAiSolution = async (req, res) => {
+  try {
+    const incidentId = req.params.id;
+
+    // 1. Fetch the incident
+    let incident;
+    if (process.env.USE_MOCK_DB === 'true') {
+      incident = await IncidentFallback.findById(incidentId);
+    } else {
+      incident = await Incident.findById(incidentId);
+    }
+
+    if (!incident) {
+      return res.status(404).json({
+        success: false,
+        error: 'Incident not found'
+      });
+    }
+
+    // 2. Validate API Key
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('Missing GEMINI_API_KEY inside environment variables!');
+      return res.status(500).json({
+        success: false,
+        error: 'AI service is temporarily unavailable. Missing API Key configuration.'
+      });
+    }
+
+    // 3. Craft Prompt for Gemini Flash Model
+    const systemInstruction = "You are an expert Restaurant Operations Consultant and AI Assistant. Analyze the operational incident reported in a restaurant/store branch and generate a highly structured, professional, step-by-step resolution plan and preventative measures. Keep the tone professional, authoritative, and helpful. in simple language that can be easily understood by restaurant staff and management. Focus on actionable insights and clear guidance to resolve the issue and prevent future occurrences and in short (maximum 20 lines) without losing critical details. Always consider the severity and category of the incident when formulating your response. and give me direct Incident Resolution Plan"   ;
+
+    const promptText = `${systemInstruction}
+    
+Incident Details:
+- Title: ${incident.title}
+- Category: ${incident.category}
+- Severity: ${incident.severity}
+- Store Location: ${incident.storeLocation}
+- Description: ${incident.description}
+
+Please provide your output in a clear, professional layout. Use bullet points and clear sections:
+1. Immediate Action Plan (3-4 critical steps to mitigate the current issue immediately)
+2. Root Cause Analysis (Briefly analyze why this might have occurred)
+3. Preventative Actions (Step-by-step measures to prevent this issue from recurring)
+4. Recommended Operations Tools (Specific restaurant tools or checklists to deploy)`;
+
+    // 4. Fire API Request using native Node.js fetch with fallback models
+    console.log(`[AI] Generating solution for incident: ${incidentId} using Gemini...`);
+    
+    const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let apiResponse = null;
+    let selectedModel = '';
+    let lastError = '';
+
+    for (const modelName of candidateModels) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      console.log(`[AI] Attempting AI generation with model: ${modelName}`);
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: promptText
+                  }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (response.ok) {
+          apiResponse = response;
+          selectedModel = modelName;
+          break;
+        } else {
+          const errText = await response.text();
+          console.warn(`[AI] Model ${modelName} returned status ${response.status}: ${errText}`);
+          lastError = errText;
+        }
+      } catch (err) {
+        console.error(`[AI] Connection error with model ${modelName}:`, err);
+        lastError = err.message;
+      }
+    }
+
+    if (!apiResponse) {
+      console.error(`Gemini API Error Response (all models failed):`, lastError);
+      return res.status(502).json({
+        success: false,
+        error: 'Failed to communicate with AI generative services. All candidate models failed.'
+      });
+    }
+
+    console.log(`[AI] Gemini AI successfully generated content using model: ${selectedModel}`);
+    const apiData = await apiResponse.json();
+    
+    // 5. Extract text from Gemini structure
+    let aiText = '';
+    try {
+      aiText = apiData.candidates[0].content.parts[0].text;
+    } catch (e) {
+      console.error('Failed to parse Gemini API JSON candidates:', e, JSON.stringify(apiData));
+      return res.status(502).json({
+        success: false,
+        error: 'Received empty or unparseable payload from AI service.'
+      });
+    }
+
+    // 6. Persist to database
+    let updatedIncident;
+    if (process.env.USE_MOCK_DB === 'true') {
+      updatedIncident = await IncidentFallback.findByIdAndUpdate(incidentId, {
+        aiSolution: aiText
+      });
+    } else {
+      updatedIncident = await Incident.findByIdAndUpdate(incidentId, {
+        aiSolution: aiText
+      }, {
+        new: true,
+        runValidators: true
+      })
+      .populate('reporter', 'name email role storeLocation')
+      .populate('resolvedBy', 'name email');
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: updatedIncident
+    });
+
+  } catch (error) {
+    console.error('AI Generation Incident Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error compiling AI incident analysis.'
+    });
+  }
+};
