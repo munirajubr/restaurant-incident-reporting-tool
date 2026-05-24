@@ -51,7 +51,11 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: 'Authentication failed' };
     } catch (error) {
       setLoading(false);
-      return { success: false, error: error.message || 'Invalid credentials' };
+      let errorMsg = error.message;
+      if (errorMsg === 'Failed to fetch') {
+        errorMsg = 'Unable to connect to server. Please make sure the backend is running.';
+      }
+      return { success: false, error: errorMsg || 'Incorrect email or password' };
     }
   };
 

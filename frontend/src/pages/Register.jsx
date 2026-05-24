@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Shield } from 'lucide-react';
+import { Shield, AlertCircle } from 'lucide-react';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Toast from '../components/Toast';
@@ -32,10 +32,8 @@ const Register = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear validation error when typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
+    // Clear validation and submit errors when typing
+    setErrors((prev) => ({ ...prev, [name]: '', submit: '' }));
   };
 
   const validate = () => {
@@ -71,6 +69,7 @@ const Register = () => {
     if (result.success) {
       navigate('/');
     } else {
+      setErrors({ submit: result.error || 'Failed to create account. Email may be in use.' });
       setToast({
         message: result.error || 'Failed to create account. Email may be in use.',
         type: 'error',
@@ -109,6 +108,12 @@ const Register = () => {
             <p className="auth-welcome-subtitle">Register to begin reporting restaurant incidents</p>
 
             <form onSubmit={handleSubmit} className="auth-form-split">
+              {errors.submit && (
+                <div className="auth-submit-error-banner animate-fade-in">
+                  <AlertCircle size={16} className="auth-error-banner-icon" />
+                  <span>{errors.submit}</span>
+                </div>
+              )}
               <Input
                 label="Full Name"
                 id="name"

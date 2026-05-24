@@ -16,7 +16,7 @@ import {
   RefreshCw,
   Plus
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import StatsCard from '../components/StatsCard';
 import Badge from '../components/Badge';
@@ -26,6 +26,7 @@ import Toast from '../components/Toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // State Management
   const [incidents, setIncidents] = useState([]);
@@ -137,6 +138,23 @@ const Dashboard = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    setSelectedIncident(null);
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('inspect')) {
+      navigate('/', { replace: true });
+    }
+  };
+
+  // Deep-link check for "?inspect=incident_id" query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inspectId = params.get('inspect');
+    if (inspectId) {
+      handleInspectClick(inspectId);
+    }
+  }, [window.location.search]);
+
   const handleQuickStatusUpdate = async (newStatus) => {
     if (!selectedIncident) return;
 
@@ -221,7 +239,7 @@ const Dashboard = () => {
           message: 'Incident report deleted successfully.',
           type: 'success',
         });
-        setSelectedIncident(null);
+        handleCloseModal();
         fetchIncidents();
         fetchStats();
       }
@@ -295,6 +313,10 @@ const Dashboard = () => {
     { value: 'Metro Station Kiosk', label: 'Metro Station Kiosk (Store #105)' },
   ];
 
+  const unresolvedCriticalIncidents = incidents.filter(
+    (inc) => inc.severity === 'Critical' && inc.status !== 'Resolved' && inc.status !== 'Closed'
+  );
+
   return (
     <div className="app-page-container">
       {/* Top Welcome Title */}
@@ -324,6 +346,35 @@ const Dashboard = () => {
           </Link>
         </div>
       </div>
+
+      {/* Manager Critical Alert Banner */}
+      {user?.role === 'manager' && unresolvedCriticalIncidents.length > 0 && (
+        <div className="manager-critical-banner animate-fade-in">
+          <div className="manager-critical-banner-header">
+            <AlertCircle size={20} className="banner-alert-icon" />
+            <h3 className="banner-title">
+              CRITICAL ALERTS: {unresolvedCriticalIncidents.length} active critical incident(s) require immediate attention
+            </h3>
+          </div>
+          <div className="manager-critical-banner-list">
+            {unresolvedCriticalIncidents.map((inc) => (
+              <div key={inc._id} className="banner-critical-item">
+                <div className="banner-item-left">
+                  <span className="banner-item-store">📍 {inc.storeLocation}</span>
+                  <span className="banner-item-title">{inc.title}</span>
+                  <span className="banner-item-time">⏱️ {formatDate(inc.dateTime)}</span>
+                </div>
+                <button
+                  onClick={() => handleInspectClick(inc._id)}
+                  className="banner-item-inspect-btn"
+                >
+                  Inspect Incident
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Analytics Statistics Cards */}
       <div className="stats-grid">
@@ -462,17 +513,29 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {incidents.map((inc) => (
-                  <tr key={inc._id} className={`table-row-severity-${inc.severity.toLowerCase()}`}>
-                    <td>
-                      <div className="table-cell-title-block">
-                        <span className="table-incident-title">{inc.title}</span>
-                        <p className="table-incident-desc-preview">
-                          {inc.description.slice(0, 75)}
-                          {inc.description.length > 75 ? '...' : ''}
-                        </p>
-                      </div>
-                    </td>
+                {incidents.map((inc) => {
+                  const isPinnedCritical = inc.severity === 'Critical' && inc.status !== 'Resolved' && inc.status !== 'Closed';
+                  return (
+                    <tr 
+                      key={inc._id} 
+                      className={`table-row-severity-${inc.severity.toLowerCase()} ${isPinnedCritical ? 'table-row-pinned-critical' : ''}`}
+                    >
+                      <td>
+                        <div className="table-cell-title-block">
+                          <div className="table-title-inline-row">
+                            {isPinnedCritical && (
+                              <span className="pinned-badge" title="Active critical incident pinned to top">
+                                📌 PINNED
+                              </span>
+                            )}
+                            <span className="table-incident-title">{inc.title}</span>
+                          </div>
+                          <p className="table-incident-desc-preview">
+                            {inc.description.slice(0, 75)}
+                            {inc.description.length > 75 ? '...' : ''}
+                          </p>
+                        </div>
+                      </td>
                     <td>
                       <div className="table-cell-location">
                         <Store size={14} className="cell-icon" />
@@ -500,7 +563,8 @@ const Dashboard = () => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>
@@ -509,7 +573,7 @@ const Dashboard = () => {
 
       {/* Inspect Detail Modal (Drawer) */}
       {selectedIncident && (
-        <div className="modal-backdrop" onClick={() => setSelectedIncident(null)}>
+        <div className="modal-backdrop" onClick={handleCloseModal}>
           <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="modal-drawer-header">
               <div className="modal-drawer-title-block">
@@ -517,7 +581,7 @@ const Dashboard = () => {
                 <Badge value={selectedIncident.status} type="status" />
               </div>
               <button
-                onClick={() => setSelectedIncident(null)}
+                onClick={handleCloseModal}
                 className="btn-modal-close"
                 aria-label="Close details"
               >

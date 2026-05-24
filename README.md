@@ -43,6 +43,7 @@ PORT=5000
 MONGO_URI=replace_your_mongodb_url
 JWT_SECRET=replace_yourjwtsecret
 JWT_EXPIRES_IN=7d
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### 2. Launch the Backend Server Separately

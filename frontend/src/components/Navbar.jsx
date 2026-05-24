@@ -1,13 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, Bell, AlertTriangle, Clock, X } from 'lucide-react';
+import { api } from '../services/api';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Notification States
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Fetch open critical incidents
+  const fetchCriticalIncidents = async () => {
+    if (!user || user.role !== 'manager') return;
+    try {
+      const res = await api.getIncidents();
+      if (res.success && res.data) {
+        // Filter for unresolved (Open/In Progress) critical incidents
+        const criticals = res.data.filter(
+          (inc) => inc.severity === 'Critical' && inc.status !== 'Resolved' && inc.status !== 'Closed'
+        );
+        setNotifications(criticals);
+      }
+    } catch (err) {
+      console.error('Navbar notification fetch error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user && user.role === 'manager') {
+      fetchCriticalIncidents();
+
+      // Poll every 15 seconds to fetch new critical incidents in background
+      const interval = setInterval(fetchCriticalIncidents, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // Close dropdown if clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleNotificationClick = (incidentId) => {
+    setShowDropdown(false);
+    // Navigate to Dashboard with inspect query parameter
+    navigate(`/?inspect=${incidentId}`, { replace: true });
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHrs = Math.floor(diffMins / 60);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHrs < 24) return `${diffHrs}h ago`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
 
   if (!user) return null;
 
@@ -47,6 +110,70 @@ const Navbar = () => {
         </div>
 
         <div className="navbar-profile">
+          {/* Notifications Bell (Exclusive to Managers) */}
+          {user.role === 'manager' && (
+            <div className="navbar-notifications-wrapper" ref={dropdownRef}>
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className={`navbar-bell-btn ${showDropdown ? 'active' : ''} ${
+                  notifications.length > 0 ? 'has-notifications' : ''
+                }`}
+                title="Critical Incident Alerts"
+              >
+                <Bell size={20} />
+                {notifications.length > 0 && (
+                  <span className="bell-badge-count animate-pulse-red">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Glassmorphic Dropdown Panel */}
+              {showDropdown && (
+                <div className="navbar-notifications-dropdown glass-morphism animate-dropdown">
+                  <div className="notifications-dropdown-header">
+                    <span className="dropdown-header-title">Active Critical Alerts</span>
+                    {notifications.length > 0 && (
+                      <span className="dropdown-header-count-tag">{notifications.length} alerts</span>
+                    )}
+                  </div>
+                  <div className="notifications-dropdown-body">
+                    {notifications.length === 0 ? (
+                      <div className="notifications-empty-state">
+                        <Shield className="empty-shield-success" size={24} />
+                        <p className="empty-title">All Systems Secure</p>
+                        <p className="empty-desc">No unresolved critical issues registered.</p>
+                      </div>
+                    ) : (
+                      <div className="notifications-list">
+                        {notifications.map((notif) => (
+                          <div
+                            key={notif._id}
+                            onClick={() => handleNotificationClick(notif._id)}
+                            className="notification-dropdown-item"
+                          >
+                            <div className="notification-item-icon-box">
+                              <AlertTriangle size={16} />
+                            </div>
+                            <div className="notification-item-content">
+                              <p className="notification-item-title">{notif.title}</p>
+                              <div className="notification-item-meta">
+                                <span className="notification-meta-store">📍 {notif.storeLocation}</span>
+                                <span className="notification-meta-time">⏱️ {formatTimeAgo(notif.dateTime)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {user.role === 'manager' && <div className="navbar-divider"></div>}
+
           <div className="navbar-user-meta">
             <span className="navbar-user-name">{user.name}</span>
             <span className="navbar-user-sub">
