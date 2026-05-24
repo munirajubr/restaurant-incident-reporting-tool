@@ -200,9 +200,13 @@ exports.updateIncidentStatus = async (req, res) => {
     const updates = { status };
     if (managerNotes !== undefined) {
       updates.managerNotes = managerNotes;
+      updates.managerName = req.user.name;
+      updates.managerStore = req.user.storeLocation;
     }
     if (resolutionActions !== undefined) {
       updates.resolutionActions = resolutionActions;
+      updates.managerName = req.user.name;
+      updates.managerStore = req.user.storeLocation;
     }
 
     // Track resolution details

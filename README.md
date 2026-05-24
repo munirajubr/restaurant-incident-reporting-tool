@@ -16,7 +16,7 @@ A full-stack, responsive, and secure incident management console designed for re
 
 ## Key Features
 
-1. - **AI Incident Resolution Engine**: 
+1. **AI Incident Resolution Engine**: 
    - Dynamically calls Google Gemini AI through a self-healing model pipeline (`gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-1.5-flash`) to generate concise operational resolution steps (under 120 words) for any incident. Results are rendered inside a collapsible accordion card with a custom chevron icon, auto-bolded subheadings, and clean output with all raw markdown symbols stripped.
 2. **Manager Alert Banners & Bell Notifications**:
    - Exclusive to Managers, a dynamic top-level **Console Warning Banner** displays active critical incidents requiring immediate operations attention.
@@ -104,9 +104,12 @@ This workspaces monorepo is deployed on Vercel as two separate projects — one 
 #### 2. Deploy the Frontend
 1. Import the same repository again as a **new Vercel project**.
 2. Set the **Root Directory** to `frontend` (or wherever your Vite app lives).
-3. Vercel will detect it as a Node.js project and deploy it as serverless endpoints.
+3. Vercel will detect it as a static Vite project.
 4. Add the following **Environment Variable** in Project Settings → Environment Variables:
-5. Note the deployed URL (e.g. `https://your-frontend.vercel.app`).
+   - **Key**: `VITE_API_URL`
+   - **Value**: `https://your-backend.vercel.app/api` (the backend URL from the previous step with `/api` appended).
+5. **SPA Direct Routing Rewrite Config**: We have created a `frontend/vercel.json` file containing standard rewrite rules (`{"source": "/(.*)", "destination": "/index.html"}`). This directs Vercel to route all direct entries or page refreshes back to `/index.html`, resolving any `NOT_FOUND` routing errors and letting React Router take over client-side routing.
+6. Note the deployed URL (e.g. `https://your-frontend.vercel.app`).
 
 ---
 

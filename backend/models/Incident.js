@@ -52,6 +52,14 @@ const IncidentSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  managerName: {
+    type: String,
+    default: ''
+  },
+  managerStore: {
+    type: String,
+    default: ''
+  },
   resolutionActions: {
     type: [String],
     default: []

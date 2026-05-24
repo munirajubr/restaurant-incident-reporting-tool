@@ -16,7 +16,9 @@ import {
   RefreshCw,
   Plus,
   UserPlus,
-  Sparkles
+  Sparkles,
+  Lightbulb,
+  Save
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
@@ -25,6 +27,8 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Toast from '../components/Toast';
+import IncidentInspectDrawer from '../components/IncidentInspectDrawer';
+import AddUserDrawer from '../components/AddUserDrawer';
 
 // Helper to parse AI solution text into collapsible sections with clean text
 const parseAiSolution = (text) => {
@@ -130,6 +134,7 @@ const Dashboard = () => {
   const [inspectStatus, setInspectStatus] = useState('');
   const [inspectNotes, setInspectNotes] = useState('');
   const [inspectActions, setInspectActions] = useState([]);
+  const [customActionText, setCustomActionText] = useState('');
 
   // Fetch incidents list
   const fetchIncidents = useCallback(async () => {
@@ -346,7 +351,7 @@ const Dashboard = () => {
   };
 
   const handleSaveResolution = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!selectedIncident) return;
 
     setModalLoading(true);
@@ -359,7 +364,7 @@ const Dashboard = () => {
       );
       if (response.success) {
         setToast({
-          message: `Incident status updated to '${inspectStatus}'!`,
+          message: 'Manager suggestions and resolution actions updated successfully!',
           type: 'success',
         });
         
@@ -735,419 +740,37 @@ const Dashboard = () => {
         )}
       </Card>
 
-      {/* Inspect Detail Modal (Drawer) */}
-      {selectedIncident && (
-        <div className="modal-backdrop" onClick={handleCloseModal}>
-          <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drawer-header">
-              <div className="modal-drawer-title-block">
-                <Badge value={selectedIncident.severity} type="severity" />
-                <Badge value={selectedIncident.status} type="status" />
-              </div>
-              <button
-                onClick={handleCloseModal}
-                className="btn-modal-close"
-                aria-label="Close details"
-              >
-                <X size={20} />
-              </button>
-            </div>
+      {/* Inspect Detail Drawer Component */}
+      <IncidentInspectDrawer
+        isOpen={!!selectedIncident}
+        onClose={handleCloseModal}
+        incident={selectedIncident}
+        user={user}
+        aiLoading={aiLoading}
+        modalLoading={modalLoading}
+        onGenerateAiSolution={handleGenerateAiSolution}
+        inspectNotes={inspectNotes}
+        setInspectNotes={setInspectNotes}
+        inspectActions={inspectActions}
+        setInspectActions={setInspectActions}
+        customActionText={customActionText}
+        setCustomActionText={setCustomActionText}
+        handleSaveResolution={handleSaveResolution}
+        handleDeleteIncident={handleDeleteIncident}
+        handleQuickStatusUpdate={handleQuickStatusUpdate}
+      />
 
-            <div className="modal-drawer-body">
-              <h2 className="modal-incident-title">{selectedIncident.title}</h2>
-              
-              <div className="modal-detail-badges-row">
-                <div className="modal-badge-info">
-                  <Store size={14} />
-                  <span>{selectedIncident.storeLocation}</span>
-                </div>
-                <div className="modal-badge-info">
-                  <ClipboardList size={14} />
-                  <span>{selectedIncident.category}</span>
-                </div>
-                <div className="modal-badge-info">
-                  <Calendar size={14} />
-                  <span>{formatDate(selectedIncident.dateTime)}</span>
-                </div>
-              </div>
-
-              <div className="modal-section-divider"></div>
-
-              {/* Description */}
-              <div className="modal-detail-section">
-                <h4 className="modal-section-title">Incident Description</h4>
-                <p className="modal-incident-description-text">{selectedIncident.description}</p>
-              </div>
-
-              {/* Photo Evidence */}
-              {(() => {
-                const images = getIncidentImages(selectedIncident.image);
-                if (images.length === 0) return null;
-                return (
-                  <div className="modal-detail-section">
-                    <h4 className="modal-section-title">Photo Evidence ({images.length})</h4>
-                    {images.length === 1 ? (
-                      <div className="modal-incident-image-container">
-                        <a href={images[0]} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
-                          <img 
-                            src={images[0]} 
-                            alt="Incident attachment" 
-                            className="modal-incident-image" 
-                          />
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="image-previews-grid" style={{ marginTop: '0.5rem' }}>
-                        {images.map((img, idx) => (
-                          <div key={idx} className="image-preview-wrapper" style={{ maxWidth: '100%', cursor: 'pointer' }}>
-                            <a href={img} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
-                              <img 
-                                src={img} 
-                                alt={`Incident attachment ${idx + 1}`} 
-                                className="image-preview-img" 
-                              />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Reporter details */}
-              {selectedIncident.reporter && (
-                <div className="modal-detail-section modal-reporter-box">
-                  <User size={16} className="reporter-icon" />
-                  <div className="reporter-details">
-                    <span className="reporter-label">Reported By</span>
-                    <span className="reporter-name">
-                      {selectedIncident.reporter.name} ({selectedIncident.reporter.role})
-                    </span>
-                    <span className="reporter-email">{selectedIncident.reporter.email}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* <div className="modal-section-divider"></div> */}
-
-              {/* AI-Generated Resolution Guide */}
-              {selectedIncident.status !== 'Resolved' && (
-                <details 
-                  className="modal-detail-section modal-ai-solution-box" 
-                  open={!!selectedIncident.aiSolution}
-                >
-                  <summary className="ai-solution-summary">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span className="ai-summary-arrow-wrapper">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="ai-summary-arrow-svg" height="20px" viewBox="0 -960 960 960" width="20px">
-                            <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z" fill="currentColor"/>
-                          </svg>
-                        </span>
-                        <Sparkles size={16} className="ai-sparkles-icon" />
-                        <h4 className="modal-section-title" style={{ margin: 0, color: 'var(--text-main)', textTransform: 'none', letterSpacing: 'normal' }}>
-                          AI Resolution Guide
-                        </h4>
-                      </div>
-                      {selectedIncident.aiSolution && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleGenerateAiSolution();
-                          }}
-                          className="btn-ai-regenerate-heading"
-                          disabled={aiLoading}
-                        >
-                          <Sparkles size={12} />
-                          <span>Regenerate</span>
-                        </button>
-                      )}
-                    </div>
-                  </summary>
-                  
-                  <div className="ai-solution-details-content">
-                    {aiLoading ? (
-                      <div className="ai-solution-loading animate-pulse">
-                        <span className="spinner-loader-small"></span>
-                        <p style={{ margin: '0.5rem 0 0 0', fontWeight: '500', color: 'var(--primary-color)' }}>
-                          Gemini AI is compiling operations resolutions...
-                        </p>
-                      </div>
-                    ) : selectedIncident.aiSolution ? (
-                      <div className="ai-solution-content-text animate-fade-in">
-                        {selectedIncident.aiSolution.split('\n').map((line, idx) => {
-                          const trimmedLine = line.trim();
-                          const isHeader = 
-                            line.includes('###') || 
-                            trimmedLine.startsWith('#') || 
-                            line.toLowerCase().includes('incident resolution plan') ||
-                            /^\d+\.\s+/.test(trimmedLine) || 
-                            line.toLowerCase().includes('immediate action') ||
-                            line.toLowerCase().includes('prevention') ||
-                            line.toLowerCase().includes('root cause');
-                            
-                          const cleaned = line.replace(/[#*]/g, '').trim();
-                          if (!cleaned && !line.trim()) return <div key={idx} style={{ height: '0.5rem' }}></div>;
-                          if (isHeader) {
-                            return (
-                              <p 
-                                key={idx} 
-                                className="ai-solution-line" 
-                                style={{ fontWeight: 700, color: 'var(--text-main)', marginTop: '0.75rem', fontSize: '0.9rem' }}
-                              >
-                                {cleaned}
-                              </p>
-                            );
-                          }
-                          return <p key={idx} className="ai-solution-line">{cleaned}</p>;
-                        })}
-                      </div>
-                    ) : (
-                      <div className="ai-solution-empty-state">
-                        <p>No operational solution generated yet. Click below to analyze with Gemini AI.</p>
-                        <button
-                          type="button"
-                          onClick={handleGenerateAiSolution}
-                          className="btn btn-primary btn-ai-generate"
-                        >
-                          <Sparkles size={14} />
-                          <span>Generate Solution</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </details>
-              )}
-
-              <div className="modal-section-divider"></div>
-
-              {/* Resolution Info (if exists) */}
-              {selectedIncident.resolvedAt && (
-                <div className="modal-detail-section modal-resolved-box">
-                  <CheckCircle size={16} className="resolved-icon" />
-                  <div className="reporter-details">
-                    <span className="resolved-label">Resolved On</span>
-                    <span className="resolved-date">{formatDate(selectedIncident.resolvedAt)}</span>
-                    {selectedIncident.resolvedBy && (
-                      <span className="resolved-by">
-                        By: {selectedIncident.resolvedBy.name} ({selectedIncident.resolvedBy.email})
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Resolution Actions Taken (Read only for staff) */}
-              {selectedIncident.resolutionActions && selectedIncident.resolutionActions.length > 0 && (
-                <div className="modal-detail-section">
-                  <h4 className="modal-section-title">Resolution Actions Taken</h4>
-                  <div className="resolution-actions-read-container">
-                    {selectedIncident.resolutionActions.map((action) => (
-                      <span key={action} className="resolution-action-tag-read">
-                        {action}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Existing Manager Resolution Notes (Read only for staff) */}
-              {selectedIncident.managerNotes && (
-                <div className="modal-detail-section">
-                  <h4 className="modal-section-title">Manager Resolution Notes</h4>
-                  <div className="manager-notes-read-box">
-                    <p>{selectedIncident.managerNotes}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sticky bottom footer for Manager Actions / Staff Info */}
-            <div className="modal-drawer-footer">
-              {user?.role === 'manager' ? (
-                <div className="manager-sticky-actions-row">
-                  <button
-                    type="button"
-                    className="btn-sticky-action btn-status-delete"
-                    onClick={() => handleDeleteIncident(selectedIncident._id)}
-                    disabled={modalLoading}
-                  >
-                    <Trash2 size={16} />
-                    <span>Remove</span>
-                  </button>
-                  {selectedIncident.status === 'Resolved' ? (
-                    <button
-                      type="button"
-                      className="btn-sticky-action btn-status-ongoing active"
-                      onClick={() => handleQuickStatusUpdate('Open')}
-                      disabled={modalLoading}
-                    >
-                      <Clock size={16} />
-                      <span>Reopen Incident</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-sticky-action btn-status-solved"
-                      onClick={() => handleQuickStatusUpdate('Resolved')}
-                      disabled={modalLoading}
-                    >
-                      <CheckCircle size={16} />
-                      <span>Solved</span>
-                    </button>
-                  )}
-                  
-                  
-                </div>
-              ) : (
-                <div className="staff-view-only-alert" style={{ margin: 0 }}>
-                  <AlertCircle size={14} />
-                  <span>This incident report is locked. Only managers can update incident status or remove this report.</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Manager Register New User Modal (Drawer) */}
-      {showAddUserModal && (
-        <div className="modal-backdrop" onClick={() => setShowAddUserModal(false)}>
-          <div className="modal-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drawer-header">
-              <div className="modal-drawer-title-block">
-                <span className="badge-pill badge-gray" style={{ color: 'var(--primary-color)', backgroundColor: 'var(--primary-light)', fontWeight: 700 }}>
-                  MANAGER COMMAND
-                </span>
-              </div>
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="btn-modal-close"
-                aria-label="Close panel"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddUserSubmit} className="modal-drawer-body" style={{ gap: '20px' }}>
-              <div>
-                <h2 className="modal-incident-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.35rem' }}>
-                  <UserPlus size={22} style={{ color: 'var(--primary-color)' }} />
-                  <span>Register Operations User</span>
-                </h2>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Add a secure credential profile to manage or report incident logs.
-                </p>
-              </div>
-
-              <div className="modal-section-divider"></div>
-
-              {addUserError && (
-                <div className="auth-submit-error-banner animate-fade-in" style={{ margin: 0 }}>
-                  <AlertCircle size={16} className="auth-error-banner-icon" />
-                  <span>{addUserError}</span>
-                </div>
-              )}
-
-              <Input
-                label="Full Name"
-                id="add-name"
-                name="name"
-                type="text"
-                placeholder="e.g. John Doe"
-                value={addUserForm.name}
-                onChange={handleAddUserChange}
-                required
-                disabled={addUserLoading}
-                aria-label="Full Name"
-              />
-
-              <Input
-                label="Email Address"
-                id="add-email"
-                name="email"
-                type="email"
-                placeholder="e.g. johndoe@restaurant.com"
-                value={addUserForm.email}
-                onChange={handleAddUserChange}
-                required
-                disabled={addUserLoading}
-                aria-label="Email Address"
-              />
-
-              <Input
-                label="Initial Password"
-                id="add-password"
-                name="password"
-                type="password"
-                placeholder="Min. 6 characters"
-                value={addUserForm.password}
-                onChange={handleAddUserChange}
-                required
-                disabled={addUserLoading}
-                aria-label="Initial Password"
-              />
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <Input
-                  label="System Role"
-                  id="add-role"
-                  name="role"
-                  type="select"
-                  value={addUserForm.role}
-                  onChange={handleAddUserChange}
-                  options={[
-                    { value: 'staff', label: 'Store Staff' },
-                    { value: 'manager', label: 'Store Manager' }
-                  ]}
-                  required
-                  disabled={addUserLoading}
-                  aria-label="System Role"
-                />
-
-                <Input
-                  label="Location"
-                  id="add-location"
-                  name="storeLocation"
-                  type="select"
-                  placeholder="-- Location --"
-                  value={addUserForm.storeLocation}
-                  onChange={handleAddUserChange}
-                  options={storeOptions}
-                  required
-                  disabled={addUserLoading}
-                  aria-label="Store Location"
-                />
-              </div>
-
-              <div className="modal-section-divider" style={{ marginTop: 'auto' }}></div>
-
-              <div style={{ display: 'flex', gap: '12px', width: '100%', paddingBottom: '1rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowAddUserModal(false)}
-                  className="btn btn-secondary"
-                  style={{ flex: 1, height: '2.8rem', justifyContent: 'center' }}
-                  disabled={addUserLoading}
-                >
-                  Cancel
-                </button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={addUserLoading}
-                  style={{ flex: 1, height: '2.8rem' }}
-                >
-                  Create User
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Manager Add Operations User Drawer Component */}
+      <AddUserDrawer
+        isOpen={showAddUserModal}
+        onClose={() => setShowAddUserModal(false)}
+        onSubmit={handleAddUserSubmit}
+        loading={addUserLoading}
+        error={addUserError}
+        formState={addUserForm}
+        onChange={handleAddUserChange}
+        storeOptions={storeOptions}
+      />
 
       {toast.message && (
         <Toast

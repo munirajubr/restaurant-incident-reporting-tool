@@ -199,6 +199,8 @@ const incidentFallback = {
       dateTime: incidentData.dateTime ? new Date(incidentData.dateTime).toISOString() : new Date().toISOString(),
       reporter: incidentData.reporter,
       managerNotes: incidentData.managerNotes || '',
+      managerName: incidentData.managerName || '',
+      managerStore: incidentData.managerStore || '',
       resolutionActions: incidentData.resolutionActions || [],
       image: incidentData.image || '',
       aiSolution: incidentData.aiSolution || '',
